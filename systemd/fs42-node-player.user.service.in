@@ -1,0 +1,17 @@
+[Unit]
+Description=FieldStation42 Distributed Node Player
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=@FS42_DIR@
+Environment=DISPLAY=@DISPLAY_VALUE@
+# Start field_player.py in normal mode. This also starts FS42's local web/API
+# server, which provides /player/channels/... for this node.
+ExecStart=@FS42_DIR@/env/bin/python @FS42_DIR@/field_player.py
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=default.target

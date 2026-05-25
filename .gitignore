@@ -1,0 +1,7 @@
+cat > .gitignore <<'EOF'
+FieldStation42/
+backups/
+*.zip
+__pycache__/
+*.pyc
+EOF
