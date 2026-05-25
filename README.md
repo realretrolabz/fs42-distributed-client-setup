@@ -70,7 +70,8 @@ scripts/install-fs42-dependencies.sh
   install scripts and docs.
 
 scripts/setup-host.sh
-  Prepares headend NFS exports for media, confs, and runtime.
+  Prepares headend NFS exports for media, confs, and runtime. The headend
+  remains responsible for FieldStation42 catalog/schedule generation.
 
 scripts/setup-node.sh
   Mounts headend exports, links shared DB/config/media/runtime assets, and keeps
@@ -99,6 +100,19 @@ Then from this companion repo:
 ```bash
 scripts/setup-host.sh
 ```
+
+The host setup script does not replace FieldStation42's scheduler. It prepares
+read-only exports so clients can see the headend's media, station configs, and
+runtime DB. For schedule maintenance, use FieldStation42's own tools:
+
+```bash
+python3 station_42.py --add_day
+python3 station_42.py --add_week
+python3 station_42.py --add_month
+```
+
+Or configure FieldStation42's Live Schedule Agent on the headend so schedules
+are extended before they expire. Clients should not enable that agent.
 
 On each client:
 
@@ -132,6 +146,9 @@ scripts/install-fs42client-service.sh --fs42-dir ~/FieldStation42 --enable-linge
 
 - Mount media on clients at the same absolute path used by the headend when
   possible. For example: `/media/FS42DB/fs42`.
+- The host exports media, `confs`, and `runtime` read-only to clients.
+- Client symlinks point at read-only NFS mounts where possible. A symlink itself
+  is not what makes data read-only; the NFS export/mount permissions do that.
 - The client keeps `runtime/channel.socket`, `runtime/play_status.socket`, and
   `runtime/player_state.bin` local.
 - The client symlinks `runtime/fs42_fluid.db` to the headend runtime mount.
@@ -139,6 +156,29 @@ scripts/install-fs42client-service.sh --fs42-dir ~/FieldStation42 --enable-linge
   `confs/main_config.json` local.
 - The client links shared runtime assets such as `runtime/guide`,
   `runtime/logo_images`, and default standby/off-air media.
+- FieldStation42 currently stores both shared assets/data and local player state
+  under `runtime/`. A cleaner upstream layout for distributed setups would split
+  runtime into shared and local areas, for example:
+
+```text
+runtime/shared/
+  fs42_fluid.db
+  guide/
+  logo_images/
+  standby.png
+  brb.png
+  off_air_pattern.mp4
+  signoff.mp4
+
+runtime/local/
+  channel.socket
+  play_status.socket
+  player_state.bin
+```
+
+Until FieldStation42 has a split like that, this companion setup links only the
+specific shared runtime files/assets needed by the client and leaves sockets and
+player state local.
 
 ## Attribution
 
