@@ -11,11 +11,11 @@ deployments using a normal FieldStation42 install.
 
 Please see the upstream project for FieldStation42 source code, license,
 documentation, and support:
-
+```
 https://github.com/shane-mason/FieldStation42
 
 https://fieldstation42.com
-
+```
 Companion setup scripts for running FieldStation42 across a headend PC and one
 or more playback clients.
 
@@ -155,15 +155,3 @@ scripts/install-fs42client-service.sh --fs42-dir ~/FieldStation42 --enable-linge
   `confs/main_config.json` local.
 - The client links shared runtime assets such as `runtime/guide`,
   `runtime/logo_images`, and default standby/off-air media.
-
-## Relationship To FieldStation42
-
-FieldStation42 is the upstream project by Shane Mason. This repo is only a
-deployment companion for distributed local playback experiments.
-
-FieldStation42:
-
-```text
-https://github.com/shane-mason/FieldStation42
-https://fieldstation42.com
-```
