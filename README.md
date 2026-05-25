@@ -1,21 +1,5 @@
 # FieldStation42 Distributed Client Setup
 
-## Attribution
-
-This project is an unofficial companion/deployment helper for
-[FieldStation42](https://github.com/shane-mason/FieldStation42) by Shane Mason.
-
-FieldStation42 is the upstream application. This repository does not include or
-replace FieldStation42; it provides setup scripts for distributed client
-deployments using a normal FieldStation42 install.
-
-Please see the upstream project for FieldStation42 source code, license,
-documentation, and support:
-```
-https://github.com/shane-mason/FieldStation42
-
-https://fieldstation42.com
-```
 Companion setup scripts for running FieldStation42 across a headend PC and one
 or more playback clients.
 
@@ -155,3 +139,20 @@ scripts/install-fs42client-service.sh --fs42-dir ~/FieldStation42 --enable-linge
   `confs/main_config.json` local.
 - The client links shared runtime assets such as `runtime/guide`,
   `runtime/logo_images`, and default standby/off-air media.
+
+## Attribution
+
+This project is an unofficial companion/deployment helper for
+[FieldStation42](https://github.com/shane-mason/FieldStation42) by Shane Mason.
+
+FieldStation42 is the upstream application. This repository does not include or
+replace FieldStation42; it provides setup scripts for distributed client
+deployments using a normal FieldStation42 install.
+
+Please see the upstream project for FieldStation42 source code, license,
+documentation, and support:
+```
+https://github.com/shane-mason/FieldStation42
+
+https://fieldstation42.com
+```
