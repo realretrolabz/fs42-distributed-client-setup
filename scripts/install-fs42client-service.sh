@@ -88,7 +88,7 @@ fi
 
 if [ ! -x "$FS42_DIR/env/bin/python" ]; then
   echo "FieldStation42 venv python not found: $FS42_DIR/env/bin/python" >&2
-  echo "Run FieldStation42 install.sh or scripts/install-fs42-dependencies.sh first." >&2
+  echo "Run the upstream FieldStation42 install.sh first." >&2
   exit 1
 fi
 

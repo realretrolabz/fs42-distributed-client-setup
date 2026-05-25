@@ -65,10 +65,6 @@ their own local player state.
 ## Scripts
 
 ```text
-scripts/install-fs42-dependencies.sh
-  Installs FieldStation42 system/Python dependencies collected from the upstream
-  install scripts and docs.
-
 scripts/setup-host.sh
   Prepares headend NFS exports for media, confs, and runtime. The headend
   remains responsible for FieldStation42 catalog/schedule generation.
@@ -117,9 +113,16 @@ are extended before they expire. Clients should not enable that agent.
 On each client:
 
 ```bash
-scripts/install-fs42-dependencies.sh --fs42-dir ~/FieldStation42
 scripts/setup-node.sh
 scripts/fs42client-health-check.py --fs42-dir ~/FieldStation42 --media-root /media/FS42DB/fs42
+```
+
+This assumes FieldStation42 has already been installed on the client using the
+upstream FieldStation42 installer:
+
+```bash
+cd ~/FieldStation42
+bash install.sh
 ```
 
 Test manually:
