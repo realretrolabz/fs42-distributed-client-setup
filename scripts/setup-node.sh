@@ -18,7 +18,6 @@ detect_fs42_dir() {
     "$PWD"
     "$PWD/FieldStation42"
     "$HOME/FieldStation42"
-    "$HOME/Projects/FieldStation42"
     "$HOME/src/FieldStation42"
     "/opt/FieldStation42"
   )
