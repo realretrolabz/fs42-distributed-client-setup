@@ -157,6 +157,101 @@ append_managed_exports_block() {
   echo "Added managed FS42 exports block."
 }
 
+CHRONY_CONF="${CHRONY_CONF:-/etc/chrony/chrony.conf}"
+FS42_CHRONY_BEGIN="# BEGIN FieldStation42 distributed time server"
+FS42_CHRONY_END="# END FieldStation42 distributed time server"
+
+desired_chrony_server_block() {
+  cat <<EOF
+$FS42_CHRONY_BEGIN
+allow $HEADEND_LAN_CIDR
+local stratum 10
+$FS42_CHRONY_END
+EOF
+}
+
+current_managed_chrony_block() {
+  sudo awk -v begin="$FS42_CHRONY_BEGIN" -v end="$FS42_CHRONY_END" '
+    $0 == begin { in_block = 1 }
+    in_block { print }
+    $0 == end { in_block = 0 }
+  ' "$CHRONY_CONF"
+}
+
+remove_managed_chrony_block() {
+  sudo awk -v begin="$FS42_CHRONY_BEGIN" -v end="$FS42_CHRONY_END" '
+    $0 == begin { in_block = 1; next }
+    $0 == end { in_block = 0; next }
+    !in_block { print }
+  ' "$CHRONY_CONF" | sudo tee "$CHRONY_CONF.tmp.fs42" >/dev/null
+  sudo mv "$CHRONY_CONF.tmp.fs42" "$CHRONY_CONF"
+}
+
+install_chrony_if_needed() {
+  if command -v chronyd >/dev/null 2>&1 || command -v chronyc >/dev/null 2>&1; then
+    return 0
+  fi
+  command -v apt-get >/dev/null 2>&1 || {
+    echo "chrony not found and apt-get is unavailable; install chrony manually." >&2
+    return 1
+  }
+  sudo apt-get update
+  sudo apt-get install -y chrony
+}
+
+restart_chrony() {
+  if systemctl list-unit-files chrony.service >/dev/null 2>&1; then
+    sudo systemctl restart chrony
+  elif systemctl list-unit-files chronyd.service >/dev/null 2>&1; then
+    sudo systemctl restart chronyd
+  else
+    echo "Could not find chrony/chronyd systemd service; restart chrony manually." >&2
+    return 1
+  fi
+}
+
+apply_chrony_server_config() {
+  install_chrony_if_needed
+  need_file "$CHRONY_CONF"
+
+  desired="$(desired_chrony_server_block)"
+  current="$(current_managed_chrony_block)"
+
+  if [ -n "$current" ]; then
+    if [ "$current" = "$desired" ]; then
+      echo "Managed FS42 Chrony server block already matches; skipping."
+    else
+      echo "Existing managed FS42 Chrony server block differs:"
+      echo
+      echo "$current"
+      echo
+      echo "New selected block would be:"
+      echo
+      echo "$desired"
+      echo
+      read -r -p "Replace the old managed FS42 Chrony server block? [y/N]: " replace_block
+      if [[ "$replace_block" =~ ^[Yy]$ ]]; then
+        remove_managed_chrony_block
+        {
+          echo ""
+          desired_chrony_server_block
+        } | sudo tee -a "$CHRONY_CONF" >/dev/null
+      else
+        echo "Keeping existing managed Chrony server block."
+      fi
+    fi
+  else
+    {
+      echo ""
+      desired_chrony_server_block
+    } | sudo tee -a "$CHRONY_CONF" >/dev/null
+    echo "Added managed FS42 Chrony server block."
+  fi
+
+  restart_chrony
+  echo "Chrony server config applied. Clients may use this host as their LAN time source."
+}
+
 detected_fs42_dir="$(detect_fs42_dir)"
 
 prompt_default FS42_DIR "FieldStation42 directory" "$detected_fs42_dir"
@@ -192,6 +287,14 @@ if [[ "$apply_exports" =~ ^[Yy]$ ]]; then
   echo "NFS exports reloaded."
 else
   echo "Skipped /etc/exports changes."
+fi
+
+echo
+read -r -p "Configure this host as an offline Chrony/NTP time source for $HEADEND_LAN_CIDR? [y/N]: " apply_chrony
+if [[ "$apply_chrony" =~ ^[Yy]$ ]]; then
+  apply_chrony_server_config
+else
+  echo "Skipped Chrony/NTP host setup."
 fi
 
 echo

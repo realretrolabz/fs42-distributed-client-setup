@@ -8,6 +8,7 @@ for cataloging, scheduling, guide/web rendering, playback, and channel control.
 This repo only helps wire together the distributed deployment pieces:
 
 - NFS exports and mounts
+- optional offline LAN time sync with Chrony/NTP
 - shared media/catalog access
 - shared `fs42_fluid.db`
 - shared station configs
@@ -67,11 +68,13 @@ their own local player state.
 ```text
 scripts/setup-host.sh
   Prepares headend NFS exports for media, confs, and runtime. The headend
-  remains responsible for FieldStation42 catalog/schedule generation.
+  remains responsible for FieldStation42 catalog/schedule generation. Can also
+  optionally configure the headend as an offline Chrony/NTP time source.
 
 scripts/setup-node.sh
   Mounts headend exports, links shared DB/config/media/runtime assets, and keeps
-  local client sockets/state separate.
+  local client sockets/state separate. Can also optionally configure the client
+  to sync time from the headend.
 
 scripts/install-fs42client-service.sh
   Installs a systemd user service for client field_player.py.
@@ -109,6 +112,23 @@ python3 station_42.py --add_month
 
 Or configure FieldStation42's Live Schedule Agent on the headend so schedules
 are extended before they expire. Clients should not enable that agent.
+
+For offline deployments, `setup-host.sh` can optionally configure Chrony so the
+headend acts as the LAN time source:
+
+```text
+allow 10.0.0.0/24
+local stratum 10
+```
+
+`setup-node.sh` can optionally configure each client to sync to the headend:
+
+```text
+server 10.0.0.99 iburst prefer
+```
+
+This is not required for a quick test, but it is recommended when multiple
+clients should stay aligned to the same schedule clock without internet access.
 
 On each client:
 

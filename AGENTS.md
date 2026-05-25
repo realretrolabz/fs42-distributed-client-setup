@@ -219,6 +219,8 @@ scripts/install-fs42client-service.sh
 - Detect the local FieldStation42 checkout where possible
 - Detect the media root from `fs42_fluid.db` catalog realpaths where possible
 - Prepare NFS export lines for media, `confs`, and `runtime`
+- Optionally configure Chrony as an offline LAN time source using
+  `HEADEND_LAN_CIDR`
 - Leave schedule generation to FieldStation42's existing commands/agent
 
 `setup-node.sh` should:
@@ -227,6 +229,7 @@ scripts/install-fs42client-service.sh
 - Ask for headend host/IP
 - Use `showmount -e` to detect exported media, `confs`, and `runtime`
 - Mount those exports read-only with `nofail`, `_netdev`, and automount options
+- Optionally configure Chrony to sync from the headend host/IP
 - Warn if DB catalog realpaths do not match the selected client media mount
 - Create DB and station-config symlinks
 - Generate a client-local `main_config.json`

@@ -202,6 +202,101 @@ append_managed_fstab_block() {
   echo "Added managed FS42 fstab block."
 }
 
+CHRONY_CONF="${CHRONY_CONF:-/etc/chrony/chrony.conf}"
+FS42_CHRONY_BEGIN="# BEGIN FieldStation42 distributed time client"
+FS42_CHRONY_END="# END FieldStation42 distributed time client"
+
+desired_chrony_client_block() {
+  cat <<EOF
+$FS42_CHRONY_BEGIN
+server $HEADEND_HOST iburst prefer
+$FS42_CHRONY_END
+EOF
+}
+
+current_managed_chrony_block() {
+  sudo awk -v begin="$FS42_CHRONY_BEGIN" -v end="$FS42_CHRONY_END" '
+    $0 == begin { in_block = 1 }
+    in_block { print }
+    $0 == end { in_block = 0 }
+  ' "$CHRONY_CONF"
+}
+
+remove_managed_chrony_block() {
+  sudo awk -v begin="$FS42_CHRONY_BEGIN" -v end="$FS42_CHRONY_END" '
+    $0 == begin { in_block = 1; next }
+    $0 == end { in_block = 0; next }
+    !in_block { print }
+  ' "$CHRONY_CONF" | sudo tee "$CHRONY_CONF.tmp.fs42" >/dev/null
+  sudo mv "$CHRONY_CONF.tmp.fs42" "$CHRONY_CONF"
+}
+
+install_chrony_if_needed() {
+  if command -v chronyd >/dev/null 2>&1 || command -v chronyc >/dev/null 2>&1; then
+    return 0
+  fi
+  command -v apt-get >/dev/null 2>&1 || {
+    echo "chrony not found and apt-get is unavailable; install chrony manually." >&2
+    return 1
+  }
+  sudo apt-get update
+  sudo apt-get install -y chrony
+}
+
+restart_chrony() {
+  if systemctl list-unit-files chrony.service >/dev/null 2>&1; then
+    sudo systemctl restart chrony
+  elif systemctl list-unit-files chronyd.service >/dev/null 2>&1; then
+    sudo systemctl restart chronyd
+  else
+    echo "Could not find chrony/chronyd systemd service; restart chrony manually." >&2
+    return 1
+  fi
+}
+
+apply_chrony_client_config() {
+  install_chrony_if_needed
+  need_file "$CHRONY_CONF"
+
+  desired="$(desired_chrony_client_block)"
+  current="$(current_managed_chrony_block)"
+
+  if [ -n "$current" ]; then
+    if [ "$current" = "$desired" ]; then
+      echo "Managed FS42 Chrony client block already matches; skipping."
+    else
+      echo "Existing managed FS42 Chrony client block differs:"
+      echo
+      echo "$current"
+      echo
+      echo "New selected block would be:"
+      echo
+      echo "$desired"
+      echo
+      read -r -p "Replace the old managed FS42 Chrony client block? [y/N]: " replace_block
+      if [[ "$replace_block" =~ ^[Yy]$ ]]; then
+        remove_managed_chrony_block
+        {
+          echo ""
+          desired_chrony_client_block
+        } | sudo tee -a "$CHRONY_CONF" >/dev/null
+      else
+        echo "Keeping existing managed Chrony client block."
+      fi
+    fi
+  else
+    {
+      echo ""
+      desired_chrony_client_block
+    } | sudo tee -a "$CHRONY_CONF" >/dev/null
+    echo "Added managed FS42 Chrony client block."
+  fi
+
+  restart_chrony
+  echo "Chrony client config applied. Current sources:"
+  chronyc sources || true
+}
+
 timestamp="$(date +%Y%m%d-%H%M%S)"
 
 detected_fs42_dir="$(detect_fs42_dir)"
@@ -249,6 +344,14 @@ if [[ "$apply_fstab" =~ ^[Yy]$ ]]; then
   sudo mount "$NODE_RUNTIME_MOUNT" || true
 else
   echo "Skipped fstab changes. Make sure the mounts exist before running the player."
+fi
+
+echo
+read -r -p "Configure this client to sync time from headend $HEADEND_HOST with Chrony/NTP? [y/N]: " apply_chrony
+if [[ "$apply_chrony" =~ ^[Yy]$ ]]; then
+  apply_chrony_client_config
+else
+  echo "Skipped Chrony/NTP client setup."
 fi
 
 need_file "$NODE_CONFS_MOUNT"

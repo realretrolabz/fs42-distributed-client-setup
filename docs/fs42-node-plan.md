@@ -55,6 +55,8 @@ The setup scripts should prefer detection with editable defaults:
 - After mounting the shared runtime export, node setup inspects
   `fs42_fluid.db` and warns if the DB's catalog realpaths do not match the
   selected node media mount.
+- Host setup can optionally configure Chrony as an offline LAN time source.
+- Node setup can optionally configure Chrony to sync from the headend IP.
 
 ## Channel Control
 
