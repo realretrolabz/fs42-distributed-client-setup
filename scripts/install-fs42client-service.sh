@@ -23,15 +23,30 @@ detect_fs42_dir() {
     "$PWD/FieldStation42"
     "$HOME/FieldStation42"
     "$HOME/Projects/FieldStation42"
-    "$HOME/Projects/fs42-nodes/FieldStation42"
+    "$HOME/src/FieldStation42"
     "/opt/FieldStation42"
   )
 
   local candidate
   for candidate in "${candidates[@]}"; do
-    if [ -f "$candidate/field_player.py" ]; then
+    if [ -f "$candidate/field_player.py" ] && [ -f "$candidate/station_42.py" ]; then
       echo "$candidate"
       return 0
+    fi
+  done
+
+  local search_root found
+  for search_root in "$HOME/Projects" "$HOME/src" "$HOME"; do
+    [ -d "$search_root" ] || continue
+    found="$(
+      find "$search_root" -maxdepth 4 -type f -name field_player.py -path '*/FieldStation42/field_player.py' -print -quit 2>/dev/null || true
+    )"
+    if [ -n "$found" ]; then
+      candidate="$(dirname "$found")"
+      if [ -f "$candidate/station_42.py" ]; then
+        echo "$candidate"
+        return 0
+      fi
     fi
   done
 
