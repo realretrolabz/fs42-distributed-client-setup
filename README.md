@@ -11,7 +11,9 @@ deployments using a normal FieldStation42 install.
 
 Please see the upstream project for FieldStation42 source code, license,
 documentation, and support:
+
 https://github.com/shane-mason/FieldStation42
+
 https://fieldstation42.com
 
 Companion setup scripts for running FieldStation42 across a headend PC and one
